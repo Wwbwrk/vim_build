@@ -1,0 +1,96 @@
+name: test windows
+on: workflow_dispatch
+#  schedule:
+#    - cron: '42 0 * * *'  # Run once per day, to avoid Coverity's submission limits
+
+#permissions:
+#  contents: read # to fetch code (actions/checkout)
+
+jobs:
+  scan:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+
+    steps:
+      - name: Checkout repository from github
+        uses: actions/checkout@v4
+#        with:
+#          ref: v9.1.0000
+      - run: |
+          echo "after tag ref"
+
+#https://github.com/microsoft/vswhere
+#https://devblogs.microsoft.com/setup/new-vswhere-with-more-properties/
+
+      - name: vswhere
+        shell: pwsh
+        run: |
+          $where = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere"
+          $l = & $where @("-products", "*", "-latest", "-property", "installationPath")
+          $vsbuild = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build"
+          if: $l -eq $vsbuild
+          pushd $vsbuild
+          cmd /c "vcvarsall.bat ${{ matrix.arch }}&set" | foreach { \
+            $_
+            if ($_ -match "=") { \
+              $v = $_.split("=", 2); set-item -force -path "ENV:\$($v[0])"  -value "$($v[1])" \
+            } \
+          }
+          popd
+# appveyor.bat
+      - name: install
+        shell: pwsh
+        run: |
+          $env:BUILD_FOLDER = "build"
+          mkdir $env:BUILD_FOLDER
+          cd build
+          $env:DEPENDENCIES = $env:BUILD_FOLDER + "\dependencies"
+          mkdir $env:DEPENDENCIES
+          get-childitem * -recurse | foreach {echo $_.name}
+          echo "$(pwd)"
+          $env:TAG_NAME = $(git describe --tags --abbrev=0)
+          $env:PATCHLEVEL = ($env:TAG_NAME -split "\.")[2]
+          if (${{ matrix.arch }} -eq "x64") {$bit = 64} else {$env:BIT = "32"}
+          $env:DEPENDENCIES=".\dependencies"
+          echo "TAG_NAME: $env:TAG_NAME"
+          git submodule update --init
+          git submodule update --remote
+          cd vim_scan\src
+          echo "$(pwd)"
+          nmake -f Make_mvc.mak \
+            GUI=yes OLE=yes DIRECTX=yes \
+            FEATURES=HUGE IME=yes MBYTE=yes ICONV=yes DEBUG=no 
+
+#      - name: build
+#        shell: pwsh
+#        run: |
+#
+#      - name: package
+#        shell: pwsh
+#        run: |
+#
+#      - name: Archive out file
+#        uses: actions/upload-artifact@v4
+#        with:
+#          - path: gvim_*_x86.zip
+#            name: gvim_x86
+#          - path: gvim_*_x86_pdb.zip
+#            name: gvim_x86_pdb
+#          - path: gvim_*_x64.zip
+#            name: gvim_x64
+#          - path: gvim_*_x64_pdb.zip
+#            name: gvim_x64_pdb
+#          - path: gvim_*_x86.exe
+#            name: gvim_x86_installer
+#          - path: gvim_*_x64.exe
+#            name: gvim_x64_installer
+#          - path: unsigned*.zip
+#            name: vim_zip_for_signing
+#
+#      - name: Archive out file
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: out.txt
+#          path: scan\out.txt

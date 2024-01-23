@@ -1,3 +1,3 @@
-[submodule "vim"]
-	path = vim
-	url = https://github.com/vim/vim.git
+[submodule "vim_scan"]
+	path = vim_scan
+	url = https://github.com/wwbwrk/vim_scan.git
