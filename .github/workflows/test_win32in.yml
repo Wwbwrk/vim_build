@@ -30,7 +30,7 @@ jobs:
           $where = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere"
           $l = & $where @("-products", "*", "-latest", "-property", "installationPath")
           $vsbuild = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build"
-          if: $l -eq $vsbuild
+          echo "l = vsbuild $($l -eq $vsbuild)"
           pushd $vsbuild
           cmd /c "vcvarsall.bat ${{ matrix.arch }}&set" | foreach { \
             $_
