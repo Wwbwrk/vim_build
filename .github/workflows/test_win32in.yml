@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository from github
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 #        with:
 #          ref: v9.1.0000
       - run: |
